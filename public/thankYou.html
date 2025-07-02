@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Confirmed - ClaudyGod</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      padding: 40px;
+      max-width: 600px;
+      width: 90%;
+      margin: 20px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    }
+    
+    .checkmark {
+      color: #4f46e5;
+      font-size: 5rem;
+      margin-bottom: 20px;
+      animation: scaleCheck 0.5s ease-in-out;
+    }
+    
+    @keyframes scaleCheck {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    h1 {
+      color: #2d3748;
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+    }
+    
+    p {
+      color: #4a5568;
+      font-size: 1.2rem;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      padding: 14px 32px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+    
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+    
+    .confirmation-details {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    
+    .detail-label {
+      color: #718096;
+      font-weight: 600;
+    }
+    
+    .detail-value {
+      color: #2d3748;
+      font-weight: 500;
+    }
+    
+    .footer-note {
+      margin-top: 30px;
+      color: #a0aec0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="checkmark">✓</div>
+    <h1>Payment Confirmed!</h1>
+    <p>
+      Thank you for your payment. The transaction has been successfully verified 
+      and completed.
+    </p>
+    
+    <div class="confirmation-details">
+      <div class="detail-item">
+        <span class="detail-label">Confirmation ID:</span>
+        <span class="detail-value" id="confirmationId">Loading...</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Status:</span>
+        <span class="detail-value">Verified</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Confirmed At:</span>
+        <span class="detail-value" id="confirmedAt">Loading...</span>
+      </div>
+    </div>
+    
+    <a href="https://claudygod.org" class="btn">Return to Homepage</a>
+    
+    <p class="footer-note">
+      A confirmation receipt has been sent to your email address.
+      If you have any questions, contact support@claudygod.org
+    </p>
+  </div>
+
+  <script>
+    // Display confirmation details from URL params
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const confirmationId = urlParams.get('confirmationId');
+      const confirmedAt = new Date().toLocaleString();
+      
+      if (confirmationId) {
+        document.getElementById('confirmationId').textContent = confirmationId;
+        document.getElementById('confirmedAt').textContent = confirmedAt;
+      }
+    });
+  </script>
+</body>
+</html>
