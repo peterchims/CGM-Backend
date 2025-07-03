@@ -6,12 +6,10 @@ const helmet        = require('helmet');
 const compression   = require('compression');
 const morgan        = require('morgan');
 const rateLimit     = require('express-rate-limit');
-const fetch         = require('node-fetch');    // npm i node-fetch@2
+const fetch         = require('node-fetch');  
 
 const app   = express();
 const PORT  = process.env.PORT || 10000;
-
-// ─── CORS ──────────────────────────────────────────────────────────────────────
 const corsOptions = {
   origin: process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',')
@@ -21,27 +19,19 @@ const corsOptions = {
   credentials: true
 };
 app.use(cors(corsOptions));
-
-// ─── SECURITY & OPTIMIZATION ───────────────────────────────────────────────────
 app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
+  windowMs: 15 * 60 * 1000, 
   max:      1000
 }));
-
-// ─── BODY PARSING ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// ─── FORCE JSON RESPONSES ──────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
   next();
 });
-
-// ─── DATABASE ──────────────────────────────────────────────────────────────────
 mongoose.connect(process.env.DB_URI, {
     useNewUrlParser:    true,
     useUnifiedTopology: true
@@ -51,8 +41,6 @@ mongoose.connect(process.env.DB_URI, {
     console.error('❌ DB connection error:', err);
     process.exit(1);
   });
-
-// ─── ROUTES ────────────────────────────────────────────────────────────────────
 const routes = {
   subscriber:   require('./routes/SubscriberRoutes'),
   contact:      require('./routes/ContactRoutes'),
@@ -70,8 +58,6 @@ app.use('/api/volunteers',             routes.volunteer);
 app.use('/api/nigerian-bank-transfer', routes.nigerianBank);
 app.use('/api/zelle-payment',          routes.zellePayment);
 app.use('/api/paypal',                 routes.paypal);
-
-// ─── HEALTH & KEEP‑ALIVE ───────────────────────────────────────────────────────
 app.get('/health', (_, res) =>
   res.json({
     status: 'up',

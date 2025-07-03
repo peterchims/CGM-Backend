@@ -6,8 +6,8 @@ const Booking = require('../models/Booking');
 // POST new booking
 router.post('/', async (req, res) => {
   try {
-    const newBooking = new Booking(req.body);
-    const savedBooking = await newBooking.save();
+    // const newBooking = new Booking(req.body);
+    const savedBooking = await new Booking(req.body).save();
     res.status(201).json({
       message: 'Booking submitted successfully!',
       booking: savedBooking
