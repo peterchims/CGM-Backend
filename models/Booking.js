@@ -1,4 +1,3 @@
-// server/models/Booking.js
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
@@ -28,7 +27,7 @@ const bookingSchema = new mongoose.Schema({
   countryCode: {
     type: String,
     required: true,
-    enum: ['US', 'CA', 'UK', 'NG']
+    enum: ['US', 'CA', 'UK', 'NG', 'AU', 'DE', 'FR', 'IN', 'ZA', 'GH']
   },
   organization: {
     type: String,
@@ -51,9 +50,8 @@ const bookingSchema = new mongoose.Schema({
     minlength: [20, 'Please provide more details (minimum 20 characters)']
   },
   eventDate: {
-    day: { type: Number, required: true, min: 1, max: 31 },
-    month: { type: String, required: true },
-    year: { type: Number, required: true }
+    type: String,
+    required: [true, 'Event date is required']
   },
   address: {
     address1: { type: String, required: true },

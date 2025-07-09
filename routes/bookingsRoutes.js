@@ -1,27 +1,47 @@
-// server/routes/bookingsRoutes.js
 const express = require('express');
-const router = express.Router();
+const createHttpError = require('http-errors');
 const Booking = require('../models/Booking');
 
-// POST new booking
-router.post('/', async (req, res) => {
+const router = express.Router();
+
+// Create a booking
+router.post('/', async (req, res, next) => {
   try {
-    // const newBooking = new Booking(req.body);
-    const savedBooking = await new Booking(req.body).save();
+    if (!req.body || Object.keys(req.body).length === 0) {
+      throw createHttpError(400, 'Request body is empty');
+    }
+
+    const newBooking = new Booking(req.body);
+    const savedBooking = await newBooking.save();
     res.status(201).json({
+      status: 'success',
       message: 'Booking submitted successfully!',
       booking: savedBooking
     });
   } catch (error) {
-    console.error('Error saving booking:', error);
-    
-    // Handle validation errors
     if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ message: 'Validation failed', errors });
+      const errors = {};
+      Object.entries(error.errors).forEach(([field, err]) => {
+        errors[field] = err.message;
+      });
+
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Validation failed',
+        errors
+      });
     }
-    
-    res.status(500).json({ message: 'Server error', error: error.message });
+
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        status: 'fail',
+        message: `${field} already exists`,
+        errors: { [field]: `${field} must be unique` }
+      });
+    }
+
+    next(error);
   }
 });
 

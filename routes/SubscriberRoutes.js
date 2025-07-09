@@ -1,5 +1,6 @@
+// subscriberRoutes.js
 const express = require('express');
-const router  = express.Router();
+const router = express.Router();
 const Subscriber = require('../models/Subscriber');
 
 router.post('/', async (req, res) => {
