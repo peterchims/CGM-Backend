@@ -1,47 +1,37 @@
-const express = require('express');
-const createHttpError = require('http-errors');
-const Booking = require('../models/Booking');
+
+const express        = require('express');
+const createHttpError= require('http-errors');
+const Booking        = require('../models/Booking');
 
 const router = express.Router();
 
-// Create a booking
 router.post('/', async (req, res, next) => {
   try {
-    if (!req.body || Object.keys(req.body).length === 0) {
+    if (!req.body || !Object.keys(req.body).length) {
       throw createHttpError(400, 'Request body is empty');
     }
-
     const newBooking = new Booking(req.body);
-    const savedBooking = await newBooking.save();
+    const saved      = await newBooking.save();
     res.status(201).json({
       status: 'success',
-      message: 'Booking submitted successfully!',
-      booking: savedBooking
+      message:'Booking submitted successfully!',
+      booking: saved
     });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
+  } catch (err) {
+    if (err.name === 'ValidationError') {
       const errors = {};
-      Object.entries(error.errors).forEach(([field, err]) => {
-        errors[field] = err.message;
-      });
-
+      Object.entries(err.errors).forEach(([f,e])=>errors[f]=e.message);
+      return res.status(400).json({ status:'fail', message:'Validation failed', errors });
+    }
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
       return res.status(400).json({
-        status: 'fail',
-        message: 'Validation failed',
-        errors
+        status:'fail',
+        message:`${field} must be unique`,
+        errors:{ [field]: `${field} already exists` }
       });
     }
-
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      return res.status(400).json({
-        status: 'fail',
-        message: `${field} already exists`,
-        errors: { [field]: `${field} must be unique` }
-      });
-    }
-
-    next(error);
+    next(err);
   }
 });
 

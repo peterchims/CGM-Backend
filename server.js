@@ -8,152 +8,118 @@ const morgan        = require('morgan');
 const rateLimit     = require('express-rate-limit');
 const fetch         = require('node-fetch');
 
-const app   = express();
-const PORT  = process.env.PORT || 10000;
+const app  = express();
+const PORT = process.env.PORT || 10000;
 
-// Build allowed origins array from env or default to localhost:3000
-const ALLOWED_ORIGINS = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : ['http://localhost:3000'];
+// ─── Trust proxy if behind one ───────────────────────────────────────────────
+app.set('trust proxy', 1);
+
+// ---------------------------------------------------------------------------
+// 1. CORS
+// ---------------------------------------------------------------------------
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
 const corsOptions = {
   origin: (origin, cb) => {
-    // allow requests with no origin (e.g. curl, mobile apps) or whitelisted domains
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-      return cb(null, true);
-    }
-    return cb(new Error('CORS: Origin not allowed'));
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS policy: origin ${origin} not allowed`), false);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
   credentials: true,
   optionsSuccessStatus: 204
 };
 
-// Apply CORS (including automatic preflight handling)
+// *THIS* is the critical change ⬇︎
+app.options(/.*/, cors(corsOptions));   // <— regex instead of '/*'
 app.use(cors(corsOptions));
 
-// Other middlewares
+// ---------------------------------------------------------------------------
+// 2. Middleware
+// ---------------------------------------------------------------------------
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(compression());
-app.use(morgan('dev'));
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max:      1000
-}));
-app.use(express.json({ 
-  limit: '10mb',
-  strict: true
-}));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
+app.use(express.json({ limit: '10mb', strict: true }));
 app.use(express.urlencoded({ extended: true }));
 
-// Basic error‐handler for any thrown errors in routes
-app.use((err, req, res, next) => {
-  console.error('Unhandled Error:', err);
-  res.status(500).json({ message: 'Internal Server Error' });
-});
-
-// Connect to MongoDB
+// ---------------------------------------------------------------------------
+// 3. MongoDB
+// ---------------------------------------------------------------------------
 mongoose.connect(process.env.DB_URI, {
-    useNewUrlParser:    true,
-    useUnifiedTopology: true
-  })
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => {
-    console.error('❌ DB connection error:', err);
-    process.exit(1);
-  });
-
-// Route imports
-const routes = {
-  subscriber:   require('./routes/SubscriberRoutes'),
-  contact:      require('./routes/ContactRoutes'),
-  bookings:     require('./routes/bookingsRoutes'),
-  volunteer:    require('./routes/volunteerRoutes'),
-  nigerianBank: require('./routes/nigerianBankTransferRoutes'),
-  zellePayment: require('./routes/zellePaymentRoutes'),
-  paypal:       require('./routes/paypalRoutes'),
-};
-
-// Mount routes under /api
-app.use('/api/subscribers', routes.subscriber);
-app.use('/api/contacts',    routes.contact);
-app.use('/api/bookings',    routes.bookings);
-app.use('/api/volunteers',  routes.volunteer);
-app.use('/api/nigerian-bank-transfer', routes.nigerianBank);
-app.use('/api/zelle-payment',         routes.zellePayment);
-app.use('/api/paypal',                routes.paypal);
-
-// Health endpoints
-app.get('/health', (_, res) =>
-  res.json({
-    status: 'up',
-    db:     mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  })
-);
-app.get('/api/health', (_, res) =>
-  res.json({
-    status: 'up',
-    db:     mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  })
-);
-
-// Catch-all for undefined routes
-app.use((req, res) => {
-  res.status(404).json({
-    status:  'error',
-    message: `Route ${req.originalUrl} not found`
-  });
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => {
+  console.error('❌ DB connection error:', err);
+  process.exit(1);
 });
 
-// Optional keep‐alive ping
+// ---------------------------------------------------------------------------
+// 4. Routes
+// ---------------------------------------------------------------------------
+app.use('/api/subscribers',         require('./routes/SubscriberRoutes'));
+app.use('/api/contacts',            require('./routes/ContactRoutes'));
+app.use('/api/bookings',            require('./routes/bookingsRoutes'));
+app.use('/api/volunteers',          require('./routes/volunteerRoutes'));
+app.use('/api/nigerian-bank-transfer', require('./routes/nigerianBankTransferRoutes'));
+app.use('/api/zelle-payment',       require('./routes/zellePaymentRoutes'));
+app.use('/api/paypal',              require('./routes/paypalRoutes'));
+
+app.get(['/health','/api/health'], (_, res) =>
+  res.json({
+    status: 'up',
+    db:     mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  })
+);
+
+app.get('/', (_, res) =>
+  res.json({ message: 'ClaudyGod API Service', status: 'running', version: '1.0.0' })
+);
+
+// 404 fallback
+app.use((req, res) => res.status(404).json({
+  status: 'error',
+  message: `Route ${req.originalUrl} not found`
+}));
+
+// Error handler
+app.use((err, req, res, next) => {
+  if (err.message && err.message.startsWith('CORS policy'))
+    return res.status(401).json({ status: 'error', message: err.message });
+
+  console.error('💥  Unhandled error:', err);
+  res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Keep‑alive ping (optional)
+// ---------------------------------------------------------------------------
 if (process.env.KEEP_ALIVE_URL) {
-  const intervalMs = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 5 * 60 * 1000;
-  console.log(`🔄 Pinging ${process.env.KEEP_ALIVE_URL} every ${intervalMs/1000}s`);
-  setInterval(() => {
-    fetch(process.env.KEEP_ALIVE_URL)
-      .then(r => r.text())
-      .then(txt => console.log(`Keep‑alive response: ${txt}`))
-      .catch(err => console.error('Keep‑alive error:', err.message));
-  }, intervalMs);
+  const every = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 300000;
+  setInterval(() =>
+    fetch(process.env.KEEP_ALIVE_URL).catch(e => console.error('Keep‑alive:', e.message)),
+    every
+  );
 }
 
-// Root endpoint
-app.get('/', (req, res) =>
-  res.json({
-    message: 'ClaudyGod API Service',
-    status:  'running',
-    version: '1.0.0'
-  })
-);
+// ---------------------------------------------------------------------------
+// 6. Start / graceful shutdown
+// ---------------------------------------------------------------------------
+const server = app.listen(PORT, () => console.log(`🚀  API running on ${PORT}`));
 
-// Start server
-const server = app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
-
-// Graceful shutdown logic
-const gracefulShutdown = (signal) => {
-  console.log(`\n${signal} received: closing HTTP server`);
+const shutdown = sig => {
+  console.log(`\n${sig} received, closing…`);
   server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB disconnected');
-      process.exit(0);
-    });
+    mongoose.connection.close(false, () => process.exit(0));
   });
 };
 
-['SIGINT', 'SIGTERM'].forEach(sig =>
-  process.on(sig, () => gracefulShutdown(sig))
-);
-
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-  gracefulShutdown('uncaughtException');
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ Unhandled Rejection:', reason);
-  gracefulShutdown('unhandledRejection');
-});
+['SIGINT','SIGTERM','uncaughtException','unhandledRejection']
+  .forEach(evt => process.on(evt, () => shutdown(evt)));
