@@ -19,8 +19,8 @@ router.post('/validate', upload.single('slipFile'), async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
-    if (reference.length !== 20) {
-      return res.status(400).json({ error: 'Reference must be exactly 20 characters' });
+    if (reference.length !== 10) {
+      return res.status(400).json({ error: 'Reference must be exactly 10 characters' });
     }
     
     if (!slipFile) {

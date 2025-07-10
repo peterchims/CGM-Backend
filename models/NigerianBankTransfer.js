@@ -6,8 +6,8 @@ const transferSchema = new mongoose.Schema({
     required: [true, 'Reference is required'],
     unique: true,
     trim: true,
-    minlength: [20, 'Reference must be 20 characters'],
-    maxlength: [20, 'Reference must be 20 characters']
+    minlength: [10, 'Reference must be 10 characters'],
+    maxlength: [10, 'Reference must be 10 characters']
   },
   senderName: {
     type: String,
