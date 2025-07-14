@@ -101,25 +101,51 @@ app.use((err, req, res, next) => {
 // ---------------------------------------------------------------------------
 // 5. Keep‑alive ping (optional)
 // ---------------------------------------------------------------------------
+// ... (keep all existing imports and config)
+
+// ─── Keep-Alive Enhancement ────────────────────────────────────────────────
 if (process.env.KEEP_ALIVE_URL) {
-  const every = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 300000;
-  setInterval(() =>
-    fetch(process.env.KEEP_ALIVE_URL).catch(e => console.error('Keep‑alive:', e.message)),
-    every
-  );
+  const every = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 240000; // 4 minutes
+  const keepAlive = async () => {
+    try {
+      console.log(`🔄 Keep-alive ping to ${process.env.KEEP_ALIVE_URL}`);
+      await fetch(process.env.KEEP_ALIVE_URL);
+    } catch (e) {
+      console.error('Keep-alive failed:', e.message);
+    } finally {
+      setTimeout(keepAlive, every);
+    }
+  };
+  keepAlive();
 }
 
-// ---------------------------------------------------------------------------
-// 6. Start / graceful shutdown
-// ---------------------------------------------------------------------------
-const server = app.listen(PORT, () => console.log(`🚀  API running on ${PORT}`));
+// ─── Resilient Error Handling ───────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('⚠️  UNCAUGHT EXCEPTION! Keeping alive...', err);
+});
 
-const shutdown = sig => {
-  console.log(`\n${sig} received, closing…`);
-  server.close(() => {
-    mongoose.connection.close(false, () => process.exit(0));
-  });
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️  UNHANDLED REJECTION! Keeping alive...', reason);
+});
+
+// ─── Graceful Shutdown (Render-friendly) ───────────────────────────────────
+const shutdown = async (sig) => {
+  console.log(`\n${sig} received, graceful shutdown...`);
+  
+  try {
+    await new Promise(resolve => server.close(resolve));
+    console.log('🚫 HTTP server closed');
+    
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close(false);
+      console.log('🚫 MongoDB connection closed');
+    }
+  } catch (err) {
+    console.error('Shutdown error:', err);
+  } finally {
+    process.exit(0);
+  }
 };
 
-['SIGINT','SIGTERM','uncaughtException','unhandledRejection']
-  .forEach(evt => process.on(evt, () => shutdown(evt)));
+// Only handle termination signals (not exceptions/rejections)
+['SIGINT', 'SIGTERM'].forEach(evt => process.on(evt, shutdown));
