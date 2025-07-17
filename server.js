@@ -7,16 +7,11 @@ const compression   = require('compression');
 const morgan        = require('morgan');
 const rateLimit     = require('express-rate-limit');
 const fetch         = require('node-fetch');
-
 const app  = express();
 const PORT = process.env.PORT || 10000;
 
-// ─── Trust proxy if behind one ───────────────────────────────────────────────
 app.set('trust proxy', 1);
 
-// ---------------------------------------------------------------------------
-// 1. CORS
-// ---------------------------------------------------------------------------
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map(o => o.trim())
@@ -32,14 +27,9 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 204
 };
-
-// *THIS* is the critical change ⬇︎
 app.options(/.*/, cors(corsOptions));   // <— regex instead of '/*'
 app.use(cors(corsOptions));
 
-// ---------------------------------------------------------------------------
-// 2. Middleware
-// ---------------------------------------------------------------------------
 app.set('trust proxy', 1);
 app.use(helmet());
 app.use(compression());
@@ -48,9 +38,6 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use(express.json({ limit: '10mb', strict: true }));
 app.use(express.urlencoded({ extended: true }));
 
-// ---------------------------------------------------------------------------
-// 3. MongoDB
-// ---------------------------------------------------------------------------
 mongoose.connect(process.env.DB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -61,9 +48,6 @@ mongoose.connect(process.env.DB_URI, {
   process.exit(1);
 });
 
-// ---------------------------------------------------------------------------
-// 4. Routes
-// ---------------------------------------------------------------------------
 app.use('/api/subscribers',         require('./routes/SubscriberRoutes'));
 app.use('/api/contacts',            require('./routes/ContactRoutes'));
 app.use('/api/bookings',            require('./routes/bookingsRoutes'));
@@ -83,13 +67,11 @@ app.get('/', (_, res) =>
   res.json({ message: 'ClaudyGod API Service', status: 'running', version: '1.0.0' })
 );
 
-// 404 fallback
 app.use((req, res) => res.status(404).json({
   status: 'error',
   message: `Route ${req.originalUrl} not found`
 }));
 
-// Error handler
 app.use((err, req, res, next) => {
   if (err.message && err.message.startsWith('CORS policy'))
     return res.status(401).json({ status: 'error', message: err.message });
@@ -98,9 +80,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ status: 'error', message: 'Internal Server Error' });
 });
 
-// ---------------------------------------------------------------------------
-// 5. Keep‑alive ping (optional)
-// ---------------------------------------------------------------------------
 if (process.env.KEEP_ALIVE_URL) {
   const every = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 300000;
   setInterval(() =>
@@ -108,10 +87,6 @@ if (process.env.KEEP_ALIVE_URL) {
     every
   );
 }
-
-// ---------------------------------------------------------------------------
-// 6. Start / graceful shutdown
-// ---------------------------------------------------------------------------
 const server = app.listen(PORT, () => console.log(`🚀  API running on ${PORT}`));
 
 const shutdown = sig => {
@@ -130,12 +105,8 @@ const fetch         = require('node-fetch');
 const app  = express();
 const PORT = process.env.PORT || 10000;
 
-// ─── Trust proxy if behind one ───────────────────────────────────────────────
 app.set('trust proxy', 1);
 
-// ---------------------------------------------------------------------------
-// 1. CORS
-// ---------------------------------------------------------------------------
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map(o => o.trim())
@@ -152,13 +123,9 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-// *THIS* is the critical change ⬇︎
 app.options(/.*/, cors(corsOptions));   // <— regex instead of '/*'
 app.use(cors(corsOptions));
 
-// ---------------------------------------------------------------------------
-// 2. Middleware
-// ---------------------------------------------------------------------------
 app.set('trust proxy', 1);
 app.use(helmet());
 app.use(compression());
@@ -167,9 +134,6 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use(express.json({ limit: '10mb', strict: true }));
 app.use(express.urlencoded({ extended: true }));
 
-// ---------------------------------------------------------------------------
-// 3. MongoDB
-// ---------------------------------------------------------------------------
 mongoose.connect(process.env.DB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -180,9 +144,6 @@ mongoose.connect(process.env.DB_URI, {
   process.exit(1);
 });
 
-// ---------------------------------------------------------------------------
-// 4. Routes
-// ---------------------------------------------------------------------------
 app.use('/api/subscribers',         require('./routes/SubscriberRoutes'));
 app.use('/api/contacts',            require('./routes/ContactRoutes'));
 app.use('/api/bookings',            require('./routes/bookingsRoutes'));
@@ -202,13 +163,10 @@ app.get('/', (_, res) =>
   res.json({ message: 'ClaudyGod API Service', status: 'running', version: '1.0.0' })
 );
 
-// 404 fallback
 app.use((req, res) => res.status(404).json({
   status: 'error',
   message: `Route ${req.originalUrl} not found`
 }));
-
-// Error handler
 app.use((err, req, res, next) => {
   if (err.message && err.message.startsWith('CORS policy'))
     return res.status(401).json({ status: 'error', message: err.message });
@@ -216,10 +174,6 @@ app.use((err, req, res, next) => {
   console.error('💥  Unhandled error:', err);
   res.status(500).json({ status: 'error', message: 'Internal Server Error' });
 });
-
-// ---------------------------------------------------------------------------
-// 5. Keep‑alive ping (optional)
-// ---------------------------------------------------------------------------
 if (process.env.KEEP_ALIVE_URL) {
   const every = Number(process.env.KEEP_ALIVE_INTERVAL_MS) || 300000;
   setInterval(() =>
@@ -227,10 +181,6 @@ if (process.env.KEEP_ALIVE_URL) {
     every
   );
 }
-
-// ---------------------------------------------------------------------------
-// 6. Start / graceful shutdown
-// ---------------------------------------------------------------------------
 const server = app.listen(PORT, () => console.log(`🚀  API running on ${PORT}`));
 
 const shutdown = sig => {
@@ -244,6 +194,3 @@ const shutdown = sig => {
   .forEach(evt => process.on(evt, () => shutdown(evt)));
   });
 };
-
-// ['SIGINT','SIGTERM','uncaughtException','unhandledRejection']
-//   .forEach(evt => process.on(evt, () => shutdown(evt))); }; 
