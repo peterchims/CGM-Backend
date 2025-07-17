@@ -4,20 +4,15 @@ const router = express.Router();
 const Contact = require('../models/Contact');
 const nodemailer = require('nodemailer');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Configure Gmail Transporter
-// ─────────────────────────────────────────────────────────────────────────────
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER,  // e.g. claudygodmusic@gmail.com
-    pass: process.env.GMAIL_PASS   // App-specific password
+    user: process.env.GMAIL_USER,  
+    pass: process.env.GMAIL_PASS   
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper function: Send Admin Notification Email
-// ─────────────────────────────────────────────────────────────────────────────
 const sendAdminNotification = async ({ name, email, message }) => {
   const mailOptions = {
     from: `"Contact Form" <${process.env.GMAIL_USER}>`,
@@ -39,9 +34,6 @@ const sendAdminNotification = async ({ name, email, message }) => {
   await transporter.sendMail(mailOptions);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper function: Send Confirmation to User
-// ─────────────────────────────────────────────────────────────────────────────
 const sendUserConfirmation = async ({ name, email }) => {
   const mailOptions = {
     from: `"ClaudyGod Music & Minitries - Support Team" <${process.env.GMAIL_USER}>`,
@@ -73,7 +65,6 @@ const sendUserConfirmation = async ({ name, email }) => {
       </div>
     `
   };
-
   await transporter.sendMail(mailOptions);
 };
 router.post('/', async (req, res) => {
@@ -83,12 +74,8 @@ router.post('/', async (req, res) => {
     if (!name || !email || !message) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
-
-    // Save contact to database
     const newContact = new Contact({ name, email, message });
     await newContact.save();
-
-    // Send emails
     await Promise.all([
       sendAdminNotification({ name, email, message }),
       sendUserConfirmation({ name, email })
