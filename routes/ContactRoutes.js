@@ -48,7 +48,7 @@ const sendUserConfirmation = async ({ name, email }) => {
         <p>We have received your message and our team is currently 
         reviewing it. You can expect to hear back from us within 24–48 hours.</p>
 
-        <p>If your inquiry is urgent, feel free to reply to this email or reach us directly at <a href="mailto:support@example.com" style="color: #3498db;">support@example.com</a>.</p>
+       
 
         <p>We truly appreciate your interest and will do our best to assist you promptly.</p>
 

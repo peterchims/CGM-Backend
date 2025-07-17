@@ -43,8 +43,13 @@ const sendVolunteerConfirmation = async (volunteer) => {
         <p>If we need any more information, our team will reach out soon.</p>
         <br/>
         <p>Warm regards,</p>
-        <p><strong>The Volunteer Coordination Team</strong><br/>[Your Organization Name]</p>
+        <p><strong>The Volunteer Coordination Team</strong><br/>ClaudyGod Music & Ministries </p>
         <hr style="margin-top: 30px;" />
+        <p style="font-size: 0.9em; color: #666;">
+            ClaudyGod Music & Ministries<br/>
+            <a href="https://www.claudygod.org" style="color: #1a73e8;">www.claudygod.org</a><br />
+            Follow us on <a href="https://www.facebook.com/claudygod" style="color: #1a73e8;">Facebook</a>, <a href="https://www.instagram.com/claudygod" style="color: #1a73e8;">Instagram</a> & <a href="https://twitter.com/claudygod" style="color: #1a73e8;">Twitter</a>
+          </p>
         <p style="font-size: 12px; color: #999;">This is an automated message. Please do not reply directly to this email.</p>
       </div>
     `

@@ -18,19 +18,42 @@ const sendAdminNotification = async (booking) => {
   const mailOptions = {
     from: `"ClaudyGod Music Ministry - Support Team" <${process.env.GMAIL_USER}>`,
     to: process.env.GMAIL_USER, // Send to yourself/admin
-    subject: `📝 New Booking from ${booking.name}`,
+    subject: `📝 New Booking from ${booking.organization}`,
     html: `
-      <div style="font-family: Arial, sans-serif;">
-        <h2>New Booking Received</h2>
-        <p><strong>Name:</strong> ${booking.name}</p>
-        <p><strong>Email:</strong> ${booking.email}</p>
-        <p><strong>Phone:</strong> ${booking.phone}</p>
-        <p><strong>Date:</strong> ${booking.date}</p>
-        <p><strong>Service:</strong> ${booking.service}</p>
-        <p><strong>Additional Info:</strong></p>
-        <blockquote>${booking.message || 'No message provided'}</blockquote>
-      </div>
-    `
+  <div style="font-family: Arial, sans-serif;">
+    <h2 style="color:#2c3e50;">New Booking Received</h2>
+
+    <p><strong>Full Name:</strong> ${booking.firstName} ${booking.lastName}</p>
+    <p><strong>Email:</strong> <a href="mailto:${booking.email}">${booking.email}</a></p>
+    <p><strong>Phone:</strong> ${booking.phone}</p>
+    <p><strong>Country Code:</strong> ${booking.countryCode}</p>
+
+    <p><strong>Organization:</strong> ${booking.organization}</p>
+    <p><strong>Organization Type:</strong> ${booking.orgType}</p>
+
+    <p><strong>Event Type:</strong> ${booking.eventType}</p>
+    <p><strong>Event Date:</strong> ${booking.eventDate}</p>
+
+    <p><strong>Event Details:</strong></p>
+    <blockquote style="background: #f4f4f4; padding: 10px;">${booking.eventDetails}</blockquote>
+
+    <p><strong>Event Location:</strong></p>
+    <ul style="margin-left: 20px;">
+      <li><strong>Address 1:</strong> ${booking.address.address1}</li>
+      ${booking.address.address2 ? `<li><strong>Address 2:</strong> ${booking.address.address2}</li>` : ''}
+      <li><strong>City:</strong> ${booking.address.city}</li>
+      <li><strong>State:</strong> ${booking.address.state}</li>
+      <li><strong>Zip Code:</strong> ${booking.address.zipCode}</li>
+      <li><strong>Country:</strong> ${booking.address.country}</li>
+    </ul>
+
+    <p><strong>Agreed to Terms:</strong> ${booking.agreeTerms ? 'Yes' : 'No'}</p>
+
+    <hr style="margin-top: 30px;"/>
+    <p style="font-size: 12px; color: #999;">Booking submitted on ${new Date(booking.createdAt).toLocaleString()}</p>
+  </div>
+`
+
   };
 
   await transporter.sendMail(mailOptions);
@@ -42,19 +65,20 @@ const sendUserConfirmation = async (booking) => {
     from: `"Support Team" <${process.env.GMAIL_USER}>`,
     to: booking.email,
     subject: `✅ Booking Received – Thank You, ${booking.name}!`,
-    html: `
-      <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50;">Hi ${booking.name},</h2>
+  html: `
+  <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+    <h2 style="color: #2c3e50;">Hi ${booking.firstName},</h2>
 
-        <p>Thank you for booking with us!</p>
-        <p>We've received your booking for <strong>${booking.service}</strong> on <strong>${booking.date}</strong>.</p>
+    <p>Thank you for booking with us!</p>
 
-        <p>If we need more details, someone from our team will contact you shortly. You’ll receive a final confirmation once everything is set.</p>
+    <p>We've received your request for a <strong>${booking.eventType}</strong> scheduled on <strong>${booking.eventDate}</strong>.</p>
 
-        <p>For urgent requests, please reach out to us at <a href="mailto:claudygodmusic@gmail.com">claudygodmusic@gmail.com</a>.</p>
+    <p>Your organization, <strong>${booking.organization}</strong>, has been noted. Our team is reviewing your request and will follow up shortly if more details are needed.</p>
 
-        <br/>
-        <p>Best regards,</p>
+    <p>For urgent matters, feel free to reach out to us at <a href="mailto:claudygodmusic@gmail.com">claudygodmusic@gmail.com</a>.</p>
+
+    <br/>
+    <p>Warm regards,</p>
            <p style="font-size: 0.9em; color: #666;">
             ClaudyGod Music & Ministries<br/>
             <a href="https://www.claudygod.org" style="color: #1a73e8;">www.claudygod.org</a><br />
